@@ -23,15 +23,17 @@ struct pinpointApp: App {
         .onChange(of: scenePhase) { oldPhase, newPhase in
             switch newPhase {
             case .active:
-                print("[App] App is active (foreground)")
+                // print("[App] App is active (foreground)")
                 MQTTManager.shared.connect()
             case .inactive:
-                print("[App] App is inactive (paused)")
+                // print("[App] App is inactive (paused)")
+                break
             case .background:
-                print("[App] App is in background")
+                // print("[App] App is in background")
                 MQTTManager.shared.disconnect()
             @unknown default:
-                print("[App] App is in an unknown state")
+                // print("[App] App is in an unknown state")
+                break
             }
         }
     }

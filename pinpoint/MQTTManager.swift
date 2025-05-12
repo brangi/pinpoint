@@ -6,12 +6,18 @@ class MQTTManager: NSObject, ObservableObject, CocoaMQTTDelegate {
     static let shared = MQTTManager()
     private var mqtt: CocoaMQTT?
     @Published var isConnected: Bool = false
+    private var isConnecting: Bool = false
     
     private override init() {
         super.init()
     }
     
     func connect() {
+        guard !isConnected && !isConnecting else {
+            print("[MQTT] Already connected or connecting, skipping connect()")
+            return
+        }
+        isConnecting = true
         let clientID = "test-client"
         let host = "w0b19066.ala.us-east-1.emqxsl.com"
         let port: UInt16 = 8883
@@ -46,10 +52,12 @@ class MQTTManager: NSObject, ObservableObject, CocoaMQTTDelegate {
     
     // MARK: - CocoaMQTTDelegate
     func mqtt(_ mqtt: CocoaMQTT, didConnectAck ack: CocoaMQTTConnAck) {
+        isConnecting = false
+        isConnected = (ack == .accept)
         print("[MQTT] didConnectAck: \(ack)")
         // Subscribe to all test topics
-        mqtt.subscribe("test/#", qos: .qos1)
-        print("[MQTT] Subscribing to topic: test/#")
+        mqtt.subscribe("test-client/#", qos: .qos1)
+        print("[MQTT] Subscribing to topic: test-client/#")
     }
     
     func mqtt(_ mqtt: CocoaMQTT, didSubscribeTopics success: NSDictionary, failed: [String]) {
@@ -77,6 +85,8 @@ class MQTTManager: NSObject, ObservableObject, CocoaMQTTDelegate {
     }
 
     func mqttDidDisconnect(_ mqtt: CocoaMQTT, withError err: Error?) {
+        isConnected = false
+        isConnecting = false
         print("[MQTT] mqttDidDisconnect with error: \(String(describing: err))")
     }
 
