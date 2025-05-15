@@ -18,16 +18,31 @@ class MQTTManager: NSObject, ObservableObject, CocoaMQTTDelegate {
             print("[MQTT] Already connected or connecting, skipping connect()")
             return
         }
+        
+        
+        let username = UIDevice.current.identifierForVendor?.uuidString ?? "unknown"
+        let password = UIDevice.current.identifierForVendor?.uuidString ?? "unknown"
+               
+        let clientID: String = {
+           var systemInfo = utsname()
+            uname(&systemInfo)
+           return withUnsafePointer(to: &systemInfo.machine) {
+                $0.withMemoryRebound(to: CChar.self, capacity: 1) {
+                    String(cString: $0)
+                }
+            }
+        }()
+        
+        
         isConnecting = true
-        let clientID = "client123"
         guard let mqttHost = Bundle.main.object(forInfoDictionaryKey: "MQTT_HOST") as? String else {
             print("[MQTT] Error: MQTT_HOST not found in Info.plist or is not a String.")
             isConnecting = false
             return
         }
         let port: UInt16 = 8883
-        let username = "john_doe"
-        let password = "somepassword"
+        print("[clientID] clientID=====c: \(clientID)")
+        
         print("[MQTT] Attempting connection with:")
         print("  Host: \(mqttHost)")
         print("  Port: \(port)")
