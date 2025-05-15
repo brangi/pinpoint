@@ -12,6 +12,14 @@ DerivedData/
 xcuserdata/
 *.xcuserstate
 *.xcscmblueprint
+project.xcworkspace/xcshareddata/IDEWorkspaceChecks.plist
+
+# Project files
+*.pbxproj
+*.xcworkspace
+*.xcodeproj/project.pbxproj
+*.xcodeproj/xcuserdata/
+*.xcodeproj/project.xcworkspace/
 
 # Swift Package Manager
 .build/
@@ -55,3 +63,35 @@ playground.xcworkspace
 
 # Xcode Workspace
 xcshareddata/WorkspaceSettings.xcsettings
+
+# Certificate files
+*.crt
+*.pem
+*.key
+*.p12
+*.cer
+*.der
+*.pfx
+
+# Sensitive configuration files
+**/GoogleService-Info.plist
+*.mobileprovision
+*.provisionprofile
+
+# Generated files
+*.generated.swift
+
+# Environment files
+.env
+.env.*
+
+# Machine-specific settings
+**.xcconfig.local
+
+# Large binary assets
+*.ipa
+*.app.dSYM.zip
+*.app.zip
+
+# Firebase
+**/firebase_credentials.json

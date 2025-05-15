@@ -7,6 +7,7 @@ class MQTTManager: NSObject, ObservableObject, CocoaMQTTDelegate {
     private var mqtt: CocoaMQTT?
     @Published var isConnected: Bool = false
     private var isConnecting: Bool = false
+    private var messageTimer: Timer?
     
     private override init() {
         super.init()
@@ -18,11 +19,11 @@ class MQTTManager: NSObject, ObservableObject, CocoaMQTTDelegate {
             return
         }
         isConnecting = true
-        let clientID = "test-client"
+        let clientID = "client123"
         let host = "w0b19066.ala.us-east-1.emqxsl.com"
         let port: UInt16 = 8883
-        let username = "test-client"
-        let password = "test-client"
+        let username = "john_doe"
+        let password = "somepassword"
         print("[MQTT] Attempting connection with:")
         print("  Host: \(host)")
         print("  Port: \(port)")
@@ -47,6 +48,7 @@ class MQTTManager: NSObject, ObservableObject, CocoaMQTTDelegate {
     }
     
     func disconnect() {
+        stopMessageTimer()
         mqtt?.disconnect()
     }
     
@@ -62,14 +64,19 @@ class MQTTManager: NSObject, ObservableObject, CocoaMQTTDelegate {
     
     func mqtt(_ mqtt: CocoaMQTT, didSubscribeTopics success: NSDictionary, failed: [String]) {
         print("[MQTT] didSubscribeTopics: success=\(success), failed=\(failed)")
+        
+        // Start sending periodic messages after successfully subscribing
+        if success.count > 0 {
+            startMessageTimer()
+        }
     }
     
     func mqtt(_ mqtt: CocoaMQTT, didReceiveMessage message: CocoaMQTTMessage, id: UInt16) {
-        print("[MQTT] didReceiveMessage: \(message.string ?? "") on topic: \(message.topic), id: \(id)")
+        //print("[MQTT] didReceiveMessage: \(message.string ?? "") on topic: \(message.topic), id: \(id)")
     }
     
     func mqtt(_ mqtt: CocoaMQTT, didPublishMessage message: CocoaMQTTMessage, id: UInt16) {
-        print("[MQTT] didPublishMessage: \(message.string ?? "") on topic: \(message.topic), id: \(id)")
+        //print("[MQTT] didPublishMessage: \(message.string ?? "") on topic: \(message.topic), id: \(id)")
     }
     
     func mqtt(_ mqtt: CocoaMQTT, didUnsubscribeTopics topics: [String]) {
@@ -87,6 +94,7 @@ class MQTTManager: NSObject, ObservableObject, CocoaMQTTDelegate {
     func mqttDidDisconnect(_ mqtt: CocoaMQTT, withError err: Error?) {
         isConnected = false
         isConnecting = false
+        stopMessageTimer()
         print("[MQTT] mqttDidDisconnect with error: \(String(describing: err))")
     }
 
@@ -101,5 +109,62 @@ class MQTTManager: NSObject, ObservableObject, CocoaMQTTDelegate {
     func mqtt(_ mqtt: CocoaMQTT, didReceive trust: SecTrust, completionHandler: @escaping (Bool) -> Void) {
         print("[MQTT] didReceive trust challenge")
         completionHandler(true)
+    }
+    
+    // Add a method to publish greeting messages
+    func publishGreeting() {
+        guard let mqtt = self.mqtt, isConnected else {
+            print("[MQTT] Cannot publish greeting: not connected")
+            return
+        }
+        
+        // Get the username and client ID from the MQTT client
+        let username = mqtt.username ?? "unknown"
+        let clientID = mqtt.clientID
+        
+        // Create a greeting message including username and client ID
+        let greetingMessage = [
+            "type": "greeting",
+            "message": "Hello, this is \(username) connecting with client ID \(clientID)!",
+            "username": username,
+            "clientID": clientID,
+            "timestamp": "\(Date().timeIntervalSince1970)"
+        ]
+        
+        // Convert the message to JSON data
+        if let jsonData = try? JSONSerialization.data(withJSONObject: greetingMessage),
+           let jsonString = String(data: jsonData, encoding: .utf8) {
+            
+            // Publish to the same topic we're subscribed to
+            let topic = "test-client/\(clientID)"
+            let message = CocoaMQTTMessage(topic: topic, string: jsonString, qos: .qos1)
+            mqtt.publish(message)
+            
+            print("[MQTT] Published greeting message to topic: \(topic)")
+            print("[MQTT] Greeting content: \(jsonString)")
+        } else {
+            print("[MQTT] Failed to create greeting message JSON")
+        }
+    }
+    
+    // Timer management
+    private func startMessageTimer() {
+        stopMessageTimer() // Ensure any existing timer is invalidated
+        
+        // Create a new timer that fires every 5 seconds
+        messageTimer = Timer.scheduledTimer(withTimeInterval: 5.0, repeats: true) { [weak self] _ in
+            self?.publishGreeting()
+        }
+        
+        // Fire immediately for the first message
+        publishGreeting()
+        
+        print("[MQTT] Started periodic message timer (every 5 seconds)")
+    }
+    
+    private func stopMessageTimer() {
+        messageTimer?.invalidate()
+        messageTimer = nil
+        print("[MQTT] Stopped periodic message timer")
     }
 } 
