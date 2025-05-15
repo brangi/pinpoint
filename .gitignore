@@ -95,3 +95,6 @@ xcshareddata/WorkspaceSettings.xcsettings
 
 # Firebase
 **/firebase_credentials.json
+
+# Secrets
+Secrets.xcconfig

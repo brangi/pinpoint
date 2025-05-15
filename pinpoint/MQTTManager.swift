@@ -20,24 +20,28 @@ class MQTTManager: NSObject, ObservableObject, CocoaMQTTDelegate {
         }
         isConnecting = true
         let clientID = "client123"
-        let host = "w0b19066.ala.us-east-1.emqxsl.com"
+        guard let mqttHost = Bundle.main.object(forInfoDictionaryKey: "MQTT_HOST") as? String else {
+            print("[MQTT] Error: MQTT_HOST not found in Info.plist or is not a String.")
+            isConnecting = false
+            return
+        }
         let port: UInt16 = 8883
         let username = "john_doe"
         let password = "somepassword"
         print("[MQTT] Attempting connection with:")
-        print("  Host: \(host)")
+        print("  Host: \(mqttHost)")
         print("  Port: \(port)")
         print("  ClientID: \(clientID)")
         print("  Username: \(username)")
         print("  Password: \(password)")
         print("  SSL: true")
-        let mqtt = CocoaMQTT(clientID: clientID, host: host, port: port)
+        let mqtt = CocoaMQTT(clientID: clientID, host: mqttHost, port: port)
         mqtt.username = username
         mqtt.password = password
         mqtt.keepAlive = 60
         mqtt.enableSSL = true
         let sslSettings: [String: NSObject] = [
-            kCFStreamSSLPeerName as String: "w0b19066.ala.us-east-1.emqxsl.com" as NSObject
+            kCFStreamSSLPeerName as String: mqttHost as NSObject
         ]
         mqtt.sslSettings = sslSettings
         print("[MQTT] SSL settings applied for SNI.")
@@ -140,8 +144,8 @@ class MQTTManager: NSObject, ObservableObject, CocoaMQTTDelegate {
             let message = CocoaMQTTMessage(topic: topic, string: jsonString, qos: .qos1)
             mqtt.publish(message)
             
-            print("[MQTT] Published greeting message to topic: \(topic)")
-            print("[MQTT] Greeting content: \(jsonString)")
+            //print("[MQTT] Published greeting message to topic: \(topic)")
+            //print("[MQTT] Greeting content: \(jsonString)")
         } else {
             print("[MQTT] Failed to create greeting message JSON")
         }
